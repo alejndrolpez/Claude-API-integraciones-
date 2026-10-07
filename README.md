@@ -29,3 +29,17 @@ fs.call("foods.autocomplete.v2", expression="chick")  # cualquier método de la 
 ```
 
 El token se pide a `https://oauth.fatsecret.com/connect/token`, dura 24 h y se renueva solo.
+
+### Importar la dieta a tu cuenta (diario / Saved Meals)
+
+FatSecret solo da acceso a los datos de **tu cuenta** mediante OAuth 1.0 (3-legged);
+OAuth 2.0 sirve solo para la base de datos pública. Necesitas el **Consumer Secret**
+(en *Manage API Keys*, distinto del Client Secret) en `FATSECRET_CONSUMER_SECRET`.
+
+```bash
+python fatsecret_import.py
+```
+
+La primera vez abre el navegador, autorizas la app y pegas el código de verificación
+en la terminal. El token queda en `.fatsecret_token.json` (ignorado por git).
+Recuerda que la IP desde la que lo ejecutas debe estar autorizada en FatSecret.
