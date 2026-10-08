@@ -23,48 +23,62 @@ from fatsecret import FatSecretError
 from fatsecret.oauth1 import FatSecretUserClient
 
 # ── Dieta CBOMBA ─────────────────────────────────────────────────────
-# Tupla: (término_búsqueda, gramos, comida)
+# Tupla: (alimento, gramos, comida)
+#   alimento: food_id de FatSecret (int) o término de búsqueda (str). La base de datos
+#   es sobre todo de EE. UU. y la búsqueda libre a veces elige mal, así que los
+#   alimentos dudosos van fijados por ID.
 # comida FatSecret: "breakfast", "lunch", "dinner", "other" (no hay "snacks")
+
+KEFIR     = 5712907    # Kefir (genérico)
+BERRIES   = 5492       # Berries (genérico)
+BROCCOLI  = 36291      # Broccoli (genérico)
+COLIFLOR  = 36327      # Cauliflower (genérico)
+GNOCCHI   = 4947       # Potato Gnocchi (genérico)
+CHOCO_85  = 16311650   # Lindt 85% Dark Chocolate
+MERLUZA   = 65541812   # Chilean Hake (Trader Joe's)
+PUDDING   = 65170927   # Protein Pudding (genérico) ≈ Natillas +Proteína Mercadona
 
 DIETA = [
     {
         "nombre": "CBOMBA A — Pollo Arroz",
         "comidas": [
             ("rolled oats",              80, "breakfast"),
-            ("plain kefir",             200, "breakfast"),
-            ("frozen mixed berries",     80, "breakfast"),
+            (KEFIR,             200, "breakfast"),
+            (BERRIES,    80, "breakfast"),
             ("grilled chicken breast",  200, "lunch"),
             ("white rice cooked",       200, "lunch"),     # 80g seco ≈ 200g cocido
-            ("broccoli cauliflower mix",150, "lunch"),
+            (BROCCOLI,                 75, "lunch"),
+            (COLIFLOR,                 75, "lunch"),
             ("grilled chicken breast",  150, "dinner"),
-            ("gnocchi cooked",          150, "dinner"),
+            (GNOCCHI,   150, "dinner"),
             ("mixed green salad",        80, "dinner"),
             ("raw almonds",              30, "other"),
-            ("85% dark chocolate",       20, "other"),
+            (CHOCO_85,    20, "other"),
         ],
     },
     {
         "nombre": "CBOMBA B — Pescado Patata",
         "comidas": [
             ("rolled oats",              80, "breakfast"),
-            ("plain kefir",             200, "breakfast"),
-            ("frozen mixed berries",     80, "breakfast"),
-            ("hake fillet baked",       200, "lunch"),
+            (KEFIR,             200, "breakfast"),
+            (BERRIES,    80, "breakfast"),
+            (MERLUZA,   200, "lunch"),
             ("roasted potatoes",        250, "lunch"),
-            ("broccoli cauliflower mix",150, "lunch"),
+            (BROCCOLI,                 75, "lunch"),
+            (COLIFLOR,                 75, "lunch"),
             ("grilled salmon",          150, "dinner"),
             ("baked sweet potato",      150, "dinner"),
             ("mixed green salad",        80, "dinner"),
             ("walnuts",                  30, "other"),
-            ("protein pudding",         120, "other"),     # Natillas +Proteína Mercadona
+            (PUDDING,   120, "other"),     # Natillas +Proteína Mercadona
         ],
     },
     {
         "nombre": "CBOMBA C — Huevo Mix HC",
         "comidas": [
             ("rolled oats",              80, "breakfast"),
-            ("plain kefir",             200, "breakfast"),
-            ("frozen mixed berries",     80, "breakfast"),
+            (KEFIR,             200, "breakfast"),
+            (BERRIES,    80, "breakfast"),
             ("scrambled eggs",          180, "lunch"),     # ~3 huevos grandes
             ("baked sweet potato",      200, "lunch"),
             ("mixed green salad",       100, "lunch"),
@@ -72,7 +86,7 @@ DIETA = [
             ("cooked lentils",          200, "dinner"),
             ("mixed stir fry vegetables",150, "dinner"),
             ("raw almonds",              30, "other"),
-            ("plain kefir",             150, "other"),
+            (KEFIR,             150, "other"),
         ],
     },
 ]
@@ -95,29 +109,32 @@ _cache = {}
 def resolve_food(fs, query, grams):
     """Devuelve (food_id, serving_id, number_of_units, food_name) o None."""
     if query not in _cache:
-        foods = as_list(fs.call("foods.search", search_expression=query, max_results=10)
-                        .get("foods", {}).get("food"))
-        if not foods:
-            _cache[query] = None
+        if isinstance(query, int):
+            food = fs.call("food.get.v4", food_id=query)["food"]
         else:
+            foods = as_list(fs.call("foods.search", search_expression=query, max_results=10)
+                            .get("foods", {}).get("food"))
+            if not foods:
+                _cache[query] = None
+                return None
             # Prioriza alimentos genéricos frente a marcas
             stub = next((f for f in foods if f.get("food_type") == "Generic"), foods[0])
             food = fs.call("food.get.v4", food_id=stub["food_id"])["food"]
-            servings = as_list(food.get("servings", {}).get("serving"))
-            weighed = [s for s in servings
-                       if s.get("metric_serving_unit") in ("g", "ml") and s.get("metric_serving_amount")]
-            # Preferimos el serving en gramos ("100 g"), si no cualquiera con peso métrico
-            serving = next((s for s in weighed if s.get("measurement_description") == "g"),
-                           weighed[0] if weighed else None)
-            _cache[query] = (stub, serving)
+        servings = as_list(food.get("servings", {}).get("serving"))
+        weighed = [s for s in servings
+                   if s.get("metric_serving_unit") in ("g", "ml") and s.get("metric_serving_amount")]
+        # Preferimos el serving en gramos ("100 g"), si no cualquiera con peso métrico
+        serving = next((s for s in weighed if s.get("measurement_description") == "g"),
+                       weighed[0] if weighed else None)
+        _cache[query] = (food, serving)
 
     hit = _cache[query]
     if not hit or not hit[1]:
         return None
-    stub, serving = hit
+    food, serving = hit
     # number_of_units se expresa en la unidad del serving: escalamos por gramos
     units = grams / float(serving["metric_serving_amount"]) * float(serving.get("number_of_units", 1))
-    return stub["food_id"], serving["serving_id"], round(units, 3), stub["food_name"]
+    return food["food_id"], serving["serving_id"], round(units, 3), food["food_name"]
 
 
 # ── Saved Meals ──────────────────────────────────────────────────────
