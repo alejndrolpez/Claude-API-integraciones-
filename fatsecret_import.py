@@ -36,57 +36,63 @@ COLIFLOR  = 36327      # Cauliflower (genérico)
 GNOCCHI   = 4947       # Potato Gnocchi (genérico)
 CHOCO_85  = 16311650   # Lindt 85% Dark Chocolate
 MERLUZA   = 65541812   # Chilean Hake (Trader Joe's)
+SALMON    = 38196      # Atlantic Salmon (Farmed), crudo
 PUDDING   = 65170927   # Protein Pudding (genérico) ≈ Natillas +Proteína Mercadona
+WHEY      = 4268798    # Optimum Nutrition 100% Whey (1 scoop = 31 g)
 
+# Pesos de carne y pescado en crudo. Objetivo ≈ 2300 kcal y 210 g de proteína al día.
 DIETA = [
     {
-        "nombre": "CBOMBA A — Pollo Arroz",
+        "nombre": "CBOMBA A — Pollo Arroz",       # ≈ 2282 kcal · 210 g P
         "comidas": [
             ("rolled oats",              80, "breakfast"),
-            (KEFIR,             200, "breakfast"),
-            (BERRIES,    80, "breakfast"),
-            ("grilled chicken breast",  200, "lunch"),
-            ("white rice cooked",       200, "lunch"),     # 80g seco ≈ 200g cocido
-            (BROCCOLI,                 75, "lunch"),
-            (COLIFLOR,                 75, "lunch"),
-            ("grilled chicken breast",  150, "dinner"),
-            (GNOCCHI,   150, "dinner"),
-            ("mixed green salad",        80, "dinner"),
+            (KEFIR,                     300, "breakfast"),
+            (BERRIES,                   100, "breakfast"),
+            ("grilled chicken breast",  250, "lunch"),
+            ("white rice cooked",       300, "lunch"),
+            (BROCCOLI,                  100, "lunch"),
+            (COLIFLOR,                  100, "lunch"),
+            ("grilled chicken breast",  250, "dinner"),
+            (GNOCCHI,                   180, "dinner"),
+            ("mixed green salad",       100, "dinner"),
             ("raw almonds",              30, "other"),
-            (CHOCO_85,    20, "other"),
+            (CHOCO_85,                   20, "other"),
+            (WHEY,                       62, "other"),     # 2 scoops
         ],
     },
     {
-        "nombre": "CBOMBA B — Pescado Patata",
+        "nombre": "CBOMBA B — Pescado Patata",    # ≈ 2318 kcal · 211 g P
         "comidas": [
-            ("rolled oats",              80, "breakfast"),
-            (KEFIR,             200, "breakfast"),
-            (BERRIES,    80, "breakfast"),
-            (MERLUZA,   200, "lunch"),
+            ("rolled oats",              70, "breakfast"),
+            (KEFIR,                     250, "breakfast"),
+            (BERRIES,                   100, "breakfast"),
+            (MERLUZA,                   320, "lunch"),
             ("roasted potatoes",        250, "lunch"),
-            (BROCCOLI,                 75, "lunch"),
-            (COLIFLOR,                 75, "lunch"),
-            ("grilled salmon",          150, "dinner"),
-            ("baked sweet potato",      150, "dinner"),
-            ("mixed green salad",        80, "dinner"),
-            ("walnuts",                  30, "other"),
-            (PUDDING,   120, "other"),     # Natillas +Proteína Mercadona
+            (BROCCOLI,                  100, "lunch"),
+            (COLIFLOR,                  100, "lunch"),
+            (SALMON,                    200, "dinner"),
+            ("baked sweet potato",      200, "dinner"),
+            ("mixed green salad",       100, "dinner"),
+            ("walnuts",                  15, "other"),
+            (PUDDING,                   240, "other"),     # 2 natillas
+            (WHEY,                       62, "other"),     # 2 scoops
         ],
     },
     {
-        "nombre": "CBOMBA C — Huevo Mix HC",
+        "nombre": "CBOMBA C — Huevo Mix HC",      # ≈ 2320 kcal · 212 g P
         "comidas": [
-            ("rolled oats",              80, "breakfast"),
-            (KEFIR,             200, "breakfast"),
-            (BERRIES,    80, "breakfast"),
-            ("scrambled eggs",          180, "lunch"),     # ~3 huevos grandes
-            ("baked sweet potato",      200, "lunch"),
+            ("rolled oats",              70, "breakfast"),
+            (KEFIR,                     250, "breakfast"),
+            (BERRIES,                   100, "breakfast"),
+            ("scrambled eggs",          150, "lunch"),     # ~3 huevos
+            ("baked sweet potato",      150, "lunch"),
             ("mixed green salad",       100, "lunch"),
-            ("turkey breast sliced",    100, "dinner"),
+            ("turkey breast sliced",    300, "dinner"),
             ("cooked lentils",          200, "dinner"),
             ("mixed stir fry vegetables",150, "dinner"),
-            ("raw almonds",              30, "other"),
-            (KEFIR,             150, "other"),
+            ("raw almonds",              20, "other"),
+            (KEFIR,                     150, "other"),
+            (WHEY,                       93, "other"),     # 3 scoops
         ],
     },
 ]
