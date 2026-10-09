@@ -19,6 +19,7 @@ import json
 import os
 import random
 import sys
+import time
 
 import requests
 
@@ -92,9 +93,15 @@ class Woffu:
         )
         r.raise_for_status()
 
-    def saved(self, day):
-        s = self.slots(day).get("signSlots") or []
-        return [(x["in"]["time"][:5], (x.get("out") or {}).get("time", "")[:5]) for x in s]
+    def saved(self, day, expected=None):
+        # Woffu a veces tarda unos segundos en reflejar lo escrito: reintenta la lectura.
+        for _ in range(4):
+            s = self.slots(day).get("signSlots") or []
+            got = [(x["in"]["time"][:5], (x.get("out") or {}).get("time", "")[:5]) for x in s]
+            if expected is None or got == expected:
+                break
+            time.sleep(3)
+        return got
 
 
 def main():
@@ -127,8 +134,9 @@ def main():
                     print(day, day.strftime("%a"), exp, f"{hours:.2f}h", "(dry-run)")
                 else:
                     w.put(day, pl)
-                    good = w.saved(day) == exp
-                    print(day, day.strftime("%a"), exp, f"{hours:.2f}h", "OK" if good else "FALLO")
+                    good = w.saved(day, exp) == exp
+                    print(day, day.strftime("%a"), exp, f"{hours:.2f}h",
+                          "OK" if good else f"FALLO (leído: {w.saved(day)})")
                     ok += good
                     bad += not good
         day += dt.timedelta(days=1)
