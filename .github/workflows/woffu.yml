@@ -1,0 +1,45 @@
+name: Woffu - rellenar horas
+
+on:
+  schedule:
+    # Lunes 06:00 UTC: completa los días laborables vacíos de las últimas 5 semanas.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      from_date:
+        description: "Desde (YYYY-MM-DD). Vacío = hace 35 días"
+        required: false
+      to_date:
+        description: "Hasta (YYYY-MM-DD). Vacío = ayer"
+        required: false
+      weekly_hours:
+        description: "Horas semanales"
+        required: false
+        default: "40"
+      dry_run:
+        description: "Solo mostrar lo que haría, sin escribir"
+        type: boolean
+        default: true
+
+jobs:
+  fill:
+    runs-on: ubuntu-latest
+    env:
+      WOFFU_USER: ${{ secrets.WOFFU_USER }}
+      WOFFU_PASS: ${{ secrets.WOFFU_PASS }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - name: Rellenar
+        run: |
+          FROM="${{ github.event.inputs.from_date }}"
+          TO="${{ github.event.inputs.to_date }}"
+          HOURS="${{ github.event.inputs.weekly_hours }}"
+          ARGS="--from ${FROM:-$(date -d '35 days ago' +%F)} --weekly-hours ${HOURS:-40}"
+          [ -n "$TO" ] && ARGS="$ARGS --to $TO"
+          # En ejecución programada no hay input: dry_run vacío => escribe.
+          [ "${{ github.event.inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry-run"
+          python3 -I woffu/fill_month.py $ARGS
