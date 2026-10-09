@@ -115,8 +115,10 @@ def main():
         if day.weekday() < 5:
             data = w.slots(day)
             wd = data.get("diarySummaryWorkday") or {}
-            if not wd or wd.get("isHoliday") or wd.get("isWeekend") or data.get("signSlots"):
-                print(day, "salto")
+            absent = any(wd.get(k) for k in (
+                "absenceRemuneratedEffectiveTime", "absenceRemuneratedNotEffectiveTime", "isEvent"))
+            if not wd or wd.get("isHoliday") or wd.get("isWeekend") or data.get("signSlots") or absent:
+                print(day, "salto", "(ausencia/vacaciones)" if absent else "")
             else:
                 pl = plan(day, rnd, a.weekly_hours, a.friday_hours)
                 exp = [(x.strftime("%H:%M"), y.strftime("%H:%M")) for x, y in pl]

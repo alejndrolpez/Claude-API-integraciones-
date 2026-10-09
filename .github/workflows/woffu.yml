@@ -2,8 +2,8 @@ name: Woffu - rellenar horas
 
 on:
   schedule:
-    # Lunes 06:00 UTC: completa los días laborables vacíos de las últimas 5 semanas.
-    - cron: "0 6 * * 1"
+    # Lunes a viernes 06:00 UTC: completa los días laborables vacíos de las últimas 5 semanas (hasta ayer).
+    - cron: "0 6 * * 1-5"
   workflow_dispatch:
     inputs:
       from_date:
