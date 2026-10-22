@@ -9,7 +9,7 @@ Uso:
   python3 -I woffu/fill_month.py --from 2026-08-07 --to 2026-10-08
   python3 -I woffu/fill_month.py --weekly-hours 38.5
 
-Reglas: nunca toca fines de semana, festivos, hoy ni días que ya tengan fichajes.
+Reglas: nunca toca fines de semana, festivos (calendario de Madrid), vacaciones/solicitudes, hoy ni días que ya tengan fichajes.
 Viernes: jornada continua de --friday-hours. Lunes a jueves: lo que falta para
 --weekly-hours, con una hora para comer. Entrada >= 8:00 y salida >= 16:00.
 """
@@ -26,6 +26,15 @@ import requests
 DOMAIN = os.environ.get("WOFFU_DOMAIN", "krimdaconsulting.woffu.com")
 BASE = f"https://{DOMAIN}"
 FMT = "%Y-%m-%dT%H:%M:%S"
+
+
+def madrid_holidays(years):
+    """Festivos nacionales y de la Comunidad de Madrid. Si falla, aborta: mejor no escribir que escribir en festivo."""
+    try:
+        import holidays
+        return holidays.Spain(subdiv="MD", years=years)
+    except Exception as e:  # librería ausente o subdivisión no soportada
+        sys.exit(f"No se pudo cargar el calendario de festivos ({e}). Instala: pip install holidays")
 
 
 def login():
@@ -93,6 +102,18 @@ class Woffu:
         )
         r.raise_for_status()
 
+    def requests(self, day):
+        """Solicitudes (vacaciones, ausencias...) de ese día. None si no se pudo consultar."""
+        try:
+            r = requests.get(
+                f"{BASE}/api/svc/core/diary/users/{self.uid}/requests",
+                headers=self.h, params={"date": day.strftime("%m/%d/%Y")}, timeout=30,
+            )
+            r.raise_for_status()
+            return r.json().get("requests") or []
+        except (requests.RequestException, ValueError):
+            return None
+
     def saved(self, day, expected=None):
         # Woffu a veces tarda unos segundos en reflejar lo escrito: reintenta la lectura.
         for _ in range(4):
@@ -111,8 +132,14 @@ def main():
     ap.add_argument("--to", dest="end", type=dt.date.fromisoformat, default=today - dt.timedelta(days=1))
     ap.add_argument("--weekly-hours", type=float, default=40)
     ap.add_argument("--friday-hours", type=float, default=7)
+    ap.add_argument("--extra-holidays", default="",
+                    help="festivos locales YYYY-MM-DD separados por comas (p.ej. San Isidro, la Almudena)")
+    ap.add_argument("--skip", default="", help="fechas YYYY-MM-DD separadas por comas que no se tocan")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
+    skip = {x.strip() for x in a.skip.split(",") if x.strip()}
+    skip |= {x.strip() for x in a.extra_holidays.split(",") if x.strip()}
+    cal = madrid_holidays(range(a.start.year, a.end.year + 2))
 
     w, rnd = Woffu(), random.Random()
     end = min(a.end, today - dt.timedelta(days=1))
@@ -124,8 +151,17 @@ def main():
             wd = data.get("diarySummaryWorkday") or {}
             absent = any(wd.get(k) for k in (
                 "absenceRemuneratedEffectiveTime", "absenceRemuneratedNotEffectiveTime", "isEvent"))
-            if not wd or wd.get("isHoliday") or wd.get("isWeekend") or data.get("signSlots") or absent:
-                print(day, "salto", "(ausencia/vacaciones)" if absent else "")
+            reqs = w.requests(day)
+            if day in cal:
+                print(day, f"salto (festivo: {cal.get(day)})")
+            elif day.isoformat() in skip:
+                print(day, "salto (excluido a mano)")
+            elif reqs is None:
+                print(day, "salto (no se pudieron consultar las solicitudes; por seguridad no se escribe)")
+            elif reqs or absent:
+                print(day, "salto (ausencia/vacaciones/solicitud)")
+            elif not wd or wd.get("isHoliday") or wd.get("isWeekend") or data.get("signSlots"):
+                print(day, "salto")
             else:
                 pl = plan(day, rnd, a.weekly_hours, a.friday_hours)
                 exp = [(x.strftime("%H:%M"), y.strftime("%H:%M")) for x, y in pl]
