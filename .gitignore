@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 .venv/
 .fatsecret_token.json
+vidaa_router/dist/

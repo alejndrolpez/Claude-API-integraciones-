@@ -1,0 +1,11 @@
+# lista de prueba (nombres ficticios solo para comprobar el filtro)
+ter-jrnl-xx.hismarttv.com
+policy-jrnl-yy.hismarttv.com
+tracking-vss.hismarttv.com
+rsc-ads.hismarttv.com
+ads-privacy.hismarttv.com
+rsc-mntz.hismarttv.com
+api.euro.hismarttv.com
+auth-eu.hismarttv.com
+ter-jrnl-zz.otrodominio.com
+0.0.0.0 abtest-tv.hismarttv.com
